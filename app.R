@@ -7,8 +7,6 @@ library(ggplot2)
 library(tidyverse)
 library(shinyjs)
 
-#this is a test to see if I've connected this thing to GitHub correctly
-
 get_row_names <- function(data){
   data = data[!duplicated(data[,1]),]
   data <- data.frame(data)
