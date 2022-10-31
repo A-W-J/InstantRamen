@@ -1,38 +1,47 @@
 source('setup.R')
 
-ui <- fluidPage(
+ui <- fluidPage(title = "InstantRamen v1.0",
   useShinyjs(),
-  fluidRow(
-    column(4,
-      fileInput("upload", "Upload count data", accept = c(".txt", ".csv", ".tsv")),
-      numericInput("n", "Rows", value = 5, min = 1, step = 1)
+  theme = bslib::bs_theme(bootswatch = "darkly"),
+  tabsetPanel(
+    tabPanel("Import Data",
+      fluidRow(
+        column(4,
+          fileInput("upload", "Upload count data", accept = c(".txt", ".csv", ".tsv")),
+          numericInput("n", "Rows", value = 5, min = 1, step = 1)
+        ),
+        column(8,
+          tableOutput("head")
+        )
+      )
     ),
-    column(8,
-      tableOutput("head")
-    )
-  ),
-  fluidRow(
-    column(4,
-      textInput("ctl", "Control Group Name", value = "control"),
-      textInput("trt", "Treatment Group Name", value = "treatment"),
-      numericInput("ctl_num", "Number of control samples", value = 1),
-      numericInput("trt_num", "Number of treatment samples", value = 1),
-      actionButton("execute", "Process data")
+    tabPanel("Get Results",
+      fluidRow(
+        column(4,
+          textInput("ctl", "Control Group Name", value = "control"),
+          textInput("trt", "Treatment Group Name", value = "treatment"),
+          numericInput("ctl_num", "Number of control samples", value = 1),
+          numericInput("trt_num", "Number of treatment samples", value = 1),
+          actionButton("execute", "Process data")
+        ),
+        column(6,
+          dataTableOutput("out")
+        ),
+        column(2,
+        downloadButton("download", "download results")
+        )
+      )
     ),
-    column(6,
-      dataTableOutput("out")
-    ),
-    column(2,
-      downloadButton("download", "download results")
-    )
-  ),
-  fluidRow(
-    column(4,
-      selectInput("plotType", "Select a plot to display", choices = plots,
-                  selected = plots[1])
-    ),
-    column(8,
-      plotOutput("plotOut")
+    tabPanel("Visualize Data",
+      fluidRow(
+        column(4,
+          selectInput("plotType", "Select a plot to display", choices = plots,
+                      selected = plots[1])
+        ),
+        column(8,
+          plotOutput("plotOut")
+        )
+      )
     )
   )
 )
