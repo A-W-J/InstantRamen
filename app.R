@@ -2,19 +2,39 @@ source('setup.R')
 
 ui <- fluidPage(
   useShinyjs(),
-  fileInput("upload", "Upload count data", accept = c(".txt", ".csv", ".tsv")),
-  numericInput("n", "Rows", value = 5, min = 1, step = 1),
-  tableOutput("head"),
-  textInput("ctl", "Control Group Name", value = "control"),
-  textInput("trt", "Treatment Group Name", value = "treatment"),
-  numericInput("ctl_num", "Number of control samples", value = 1),
-  numericInput("trt_num", "Number of treatment samples", value = 1),
-  actionButton("execute", "Process data"),
-  dataTableOutput("out"),
-  downloadButton("download", "download results"),
-  selectInput("plotType", "Select a plot to display", choices = plots,
-              selected = plots[1]),
-  plotOutput("plotOut")
+  fluidRow(
+    column(4,
+      fileInput("upload", "Upload count data", accept = c(".txt", ".csv", ".tsv")),
+      numericInput("n", "Rows", value = 5, min = 1, step = 1)
+    ),
+    column(8,
+      tableOutput("head")
+    )
+  ),
+  fluidRow(
+    column(4,
+      textInput("ctl", "Control Group Name", value = "control"),
+      textInput("trt", "Treatment Group Name", value = "treatment"),
+      numericInput("ctl_num", "Number of control samples", value = 1),
+      numericInput("trt_num", "Number of treatment samples", value = 1),
+      actionButton("execute", "Process data")
+    ),
+    column(6,
+      dataTableOutput("out")
+    ),
+    column(2,
+      downloadButton("download", "download results")
+    )
+  ),
+  fluidRow(
+    column(4,
+      selectInput("plotType", "Select a plot to display", choices = plots,
+                  selected = plots[1])
+    ),
+    column(8,
+      plotOutput("plotOut")
+    )
+  )
 )
 
 server <- function(input, output, session){
@@ -93,7 +113,7 @@ server <- function(input, output, session){
                                 trt_n = main$trt_num)
   })
   output$out <- renderDataTable(
-    main$output
+    main$output, options = list(pageLength = 5)
   )
   output$download <- downloadHandler(
     filename = function(){

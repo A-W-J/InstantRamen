@@ -7,6 +7,7 @@ library(RColorBrewer)
 library(ggplot2)
 library(tidyverse)
 library(shinyjs)
+library(DT)
 
 #loading functions
 source('./functions/generate_CDS.R')
