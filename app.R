@@ -1,6 +1,6 @@
 source('setup.R')
 
-ui <- fluidPage(title = "InstantRamen v1.0",
+ui <- fluidPage(title = "InstantRamen v1.5",
   useShinyjs(),
   theme = bslib::bs_theme(bootswatch = "darkly"),
   tabsetPanel(
@@ -25,7 +25,8 @@ ui <- fluidPage(title = "InstantRamen v1.0",
           actionButton("execute", "Process data")
         ),
         column(6,
-          dataTableOutput("out")
+          dataTableOutput("out"),
+          #actionButton("transform", "Annotate data")
         ),
         column(2,
         downloadButton("download", "download results")
@@ -124,6 +125,9 @@ server <- function(input, output, session){
   output$out <- renderDataTable(
     main$output, options = list(pageLength = 5)
   )
+  #observeEvent(input$transform,{
+    #main$output <- transform_data(data = main$output)
+  #})
   output$download <- downloadHandler(
     filename = function(){
       "results.csv"

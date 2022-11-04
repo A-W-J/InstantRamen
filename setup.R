@@ -8,8 +8,10 @@ library(ggplot2)
 library(tidyverse)
 library(shinyjs)
 library(DT)
+library(org.Hs.eg.db)
 
 #loading functions
+source('./functions/convert_ids.R')
 source('./functions/generate_CDS.R')
 source('./functions/get_row_names.R')
 source('./functions/make_barplot.R')
@@ -22,6 +24,7 @@ source('./functions/make_smear_plot.R')
 source('./functions/plot_wrapper.R')
 source('./functions/preprocess_data.R')
 source('./functions/remove_low_counts.R')
+source('./functions/transform_data.R')
 
 #setting up variables
 plots <- c("Bar", "Box", "BCV", "Mean-Var", "Histogram", "Smear")
