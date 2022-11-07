@@ -1,4 +1,5 @@
 source('setup.R')
+#to do: figure out why memory usage skyrockets when the app is executed
 
 ui <- fluidPage(title = "InstantRamen v1.5",
   useShinyjs(),
@@ -11,7 +12,7 @@ ui <- fluidPage(title = "InstantRamen v1.5",
           numericInput("n", "Rows", value = 5, min = 1, step = 1)
         ),
         column(8,
-          tableOutput("head")
+          dataTableOutput("head")
         )
       )
     ),
@@ -26,7 +27,7 @@ ui <- fluidPage(title = "InstantRamen v1.5",
         ),
         column(6,
           dataTableOutput("out"),
-          #actionButton("transform", "Annotate data")
+          actionButton("transform", "Annotate data")
         ),
         column(2,
         downloadButton("download", "download results")
@@ -78,9 +79,9 @@ server <- function(input, output, session){
   observeEvent(data1(),{
     main$data = data1()
   })
-  output$head <- renderTable({
-    head(data(), input$n)
-  })
+  output$head <- renderDataTable(
+    main$userInput, options = list(pageLength = 5)
+  )
   r_ctl <- reactive({
     req(input$ctl)
     input$ctl
@@ -125,9 +126,9 @@ server <- function(input, output, session){
   output$out <- renderDataTable(
     main$output, options = list(pageLength = 5)
   )
-  #observeEvent(input$transform,{
-    #main$output <- transform_data(data = main$output)
-  #})
+  observeEvent(input$transform,{
+    main$output <- transform_data(data = main$output)
+  })
   output$download <- downloadHandler(
     filename = function(){
       "results.csv"
