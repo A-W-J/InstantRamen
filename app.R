@@ -80,7 +80,7 @@ server <- function(input, output, session){
     main$data = data1()
   })
   output$head <- renderDataTable(
-    main$userInput, options = list(pageLength = 5)
+    main$data, options = list(pageLength = 5)
   )
   r_ctl <- reactive({
     req(input$ctl)
