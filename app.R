@@ -9,7 +9,7 @@ ui <- fluidPage(title = "InstantRamen v1.5",
       fluidRow(
         column(4,
           fileInput("upload", "Upload count data", accept = c(".txt", ".csv", ".tsv")),
-          numericInput("n", "Rows", value = 5, min = 1, step = 1)
+          #numericInput("n", "Rows", value = 5, min = 1, step = 1)
         ),
         column(8,
           dataTableOutput("head")
@@ -23,15 +23,13 @@ ui <- fluidPage(title = "InstantRamen v1.5",
           textInput("trt", "Treatment Group Name", value = "treatment"),
           numericInput("ctl_num", "Number of control samples", value = 1),
           numericInput("trt_num", "Number of treatment samples", value = 1),
-          actionButton("execute", "Process data")
+          actionButton("execute", "Process data"),
+          actionButton("transform", "Annotate data"),
+          downloadButton("download", "download results")
         ),
-        column(6,
+        column(8,
           dataTableOutput("out"),
-          actionButton("transform", "Annotate data")
         ),
-        column(2,
-        downloadButton("download", "download results")
-        )
       )
     ),
     tabPanel("Visualize Data",
@@ -52,6 +50,8 @@ server <- function(input, output, session){
   main <- reactiveValues(userInput = NULL)
   observe({
     toggle(id = "execute", condition =! is.null(input$upload))
+    toggle(id = "transform", condition =! is.null(input$upload))
+    toggle(id = "download", condition =! is.null(input$upload))
   })
   dummy <- reactive({
     data.frame()
