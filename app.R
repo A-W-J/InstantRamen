@@ -1,5 +1,6 @@
 source('setup.R')
 #to do: figure out why memory usage skyrockets when the app is executed
+#to do: fix defaults for treatment and control sample numbers
 
 ui <- fluidPage(title = "InstantRamen v1.5",
   useShinyjs(),
@@ -42,6 +43,24 @@ ui <- fluidPage(title = "InstantRamen v1.5",
           plotOutput("plotOut")
         )
       )
+    ),
+    tabPanel("Compare Data",
+      fluidRow(
+        column(4,
+          fileInput("upload1", "Upload the first dataset",
+                    accept = c(".txt", ".csv", ".tsv")),
+          fileInput("upload2", "Upload the second dataset",
+                    accept = c(".txt", ".csv", ".tsv")),
+          sliderInput("pval", "P-value Cutoff", val = 0.05, min = 0, max = 1),
+          sliderInput("genecount", "Number of Genes", val = 10, min = 0, max = 100),
+          actionButton("overlaps", "Get Overlapping Genes"),
+          downloadButton("download2", "download results")
+        ),
+        column(8,
+          dataTableOutput("geneTableOut"),
+          plotOutput("GenePlotOut")
+          )
+      )
     )
   )
 )
@@ -71,6 +90,11 @@ server <- function(input, output, session){
   })
   observeEvent(data(),{
     main$userInput = data()
+    #col_numbers = check_col_number(main$userInput)
+    #ctl_default = col_numbers[0]
+    #trt_default = col_numbers[1]
+    #updateNumericInput(inputId = ctl_num, val = ctl_default)
+    #updateNumericInput(inputId = trt_nim, val = trt_default)
   })
   data1 <- reactive({
     req(input$upload)
@@ -145,6 +169,61 @@ server <- function(input, output, session){
                  cds = main$cds,
                  top = main$output,
                  toggle = input$plotType)
+  })
+  sub <- reactiveValues(userInput1 = NULL)
+  df1 <- reactive({
+    req(input$upload1)
+    ext <- tools::file_ext(input$upload1$name)
+    switch(ext,
+           csv = vroom::vroom(input$upload$datapath, delim = ","),
+           tsv = vroom::vroom(input$upload$datapath, delim = "\t"),
+           txt = vroom::vroom(input$upload$datapath, delim = "\t"),
+           validate("Invalid file; Please upload a .csv, .txt, or .tsv file")
+    )
+  })
+  df2 <- reactive({
+    req(input$upload2)
+    ext <- tools::file_ext(input$upload2$name)
+    switch(ext,
+           csv = vroom::vroom(input$upload$datapath, delim = ","),
+           tsv = vroom::vroom(input$upload$datapath, delim = "\t"),
+           txt = vroom::vroom(input$upload$datapath, delim = "\t"),
+           validate("Invalid file; Please upload a .csv, .txt, or .tsv file")
+    )
+  })
+  observeEvent(df1(),{
+    sub$userInput1 <- df1()
+  })
+  observeEvent(df2(),{
+    sub$userInput2 <- df2()
+  })
+  observeEvent(input$pval,{
+    sub$pval <- input$pval
+  })
+  observeEvent(input$genecount,{
+    sub$genecount <- input$genecount
+  })
+  observeEvent(input$overlaps,{
+    genelist <- find_overlaps(
+      df1 = sub$userInput1,
+      df2 = sub$userInput2,
+      size = sub$geneCount,
+      pcutoff = sub$pval
+    )
+    gene_df <- build_frame(
+      df1 = sub$userInput1,
+      df2 = sub$userInput2,
+      genes = genelist
+    )
+    plot <- make_compare_plot(gene_df)
+    sub$df <- gene_df
+    sub$plot <- plot
+  })
+  output$geneTableOut <- renderDataTable({
+    sub$df
+  })
+  output$genePlotOut <- renderPlot({
+    sub$plot
   })
 }
 
