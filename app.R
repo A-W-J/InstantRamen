@@ -1,6 +1,7 @@
 source('setup.R')
 #to do: figure out why memory usage skyrockets when the app is executed
 #to do: fix defaults for treatment and control sample numbers
+#to do: debug comparison tab- uploads are not currently working
 
 ui <- fluidPage(title = "InstantRamen v1.5",
   useShinyjs(),
@@ -71,6 +72,8 @@ server <- function(input, output, session){
     toggle(id = "execute", condition =! is.null(input$upload))
     toggle(id = "transform", condition =! is.null(input$upload))
     toggle(id = "download", condition =! is.null(input$upload))
+    #toggle(id = "upload1", condition =! is.null(input$upload))
+    #toggle(id = "upload2", condition =! is.null(input$upload))
   })
   dummy <- reactive({
     data.frame()
@@ -90,6 +93,7 @@ server <- function(input, output, session){
   })
   observeEvent(data(),{
     main$userInput = data()
+    print(head(main$userInput))
     #col_numbers = check_col_number(main$userInput)
     #ctl_default = col_numbers[0]
     #trt_default = col_numbers[1]
@@ -175,9 +179,9 @@ server <- function(input, output, session){
     req(input$upload1)
     ext <- tools::file_ext(input$upload1$name)
     switch(ext,
-           csv = vroom::vroom(input$upload$datapath, delim = ","),
-           tsv = vroom::vroom(input$upload$datapath, delim = "\t"),
-           txt = vroom::vroom(input$upload$datapath, delim = "\t"),
+           csv = vroom::vroom(input$upload1$datapath, delim = ","),
+           tsv = vroom::vroom(input$upload1$datapath, delim = "\t"),
+           txt = vroom::vroom(input$upload1$datapath, delim = "\t"),
            validate("Invalid file; Please upload a .csv, .txt, or .tsv file")
     )
   })
@@ -185,17 +189,19 @@ server <- function(input, output, session){
     req(input$upload2)
     ext <- tools::file_ext(input$upload2$name)
     switch(ext,
-           csv = vroom::vroom(input$upload$datapath, delim = ","),
-           tsv = vroom::vroom(input$upload$datapath, delim = "\t"),
-           txt = vroom::vroom(input$upload$datapath, delim = "\t"),
+           csv = vroom::vroom(input$upload2$datapath, delim = ","),
+           tsv = vroom::vroom(input$upload2$datapath, delim = "\t"),
+           txt = vroom::vroom(input$upload2$datapath, delim = "\t"),
            validate("Invalid file; Please upload a .csv, .txt, or .tsv file")
     )
   })
   observeEvent(df1(),{
     sub$userInput1 <- df1()
+    print(head(sub$userInput1))
   })
   observeEvent(df2(),{
     sub$userInput2 <- df2()
+    print(head(sub$userInput2))
   })
   observeEvent(input$pval,{
     sub$pval <- input$pval
@@ -204,12 +210,15 @@ server <- function(input, output, session){
     sub$genecount <- input$genecount
   })
   observeEvent(input$overlaps,{
+    df1 <- fix_gene_col(sub$userInput1)
+    df2 <- fix_gene_col(sub$userInput2)
     genelist <- find_overlaps(
-      df1 = sub$userInput1,
-      df2 = sub$userInput2,
+      df1 = df1,
+      df2 = df2,
       size = sub$geneCount,
-      pcutoff = sub$pval
+      p_cutoff = sub$pval
     )
+    print(length(genelist))
     gene_df <- build_frame(
       df1 = sub$userInput1,
       df2 = sub$userInput2,
