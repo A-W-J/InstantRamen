@@ -34,10 +34,8 @@ source('./functions/remove_low_counts.R')
 source('./functions/transform_data.R')
 
 #loading modules
-source('./modules/comp_mod.R')
-source('./modules/import_mod.R')
-source('./modules/results_mod.R')
-source('./modules/vis_mod.R')
+#source('./modules/comp_mod.R')
+#source('./modules/processor_mod.R')
 
 #setting up variables
 plots <- c("Bar", "Box", "BCV", "Mean-Var", "Histogram", "Smear")

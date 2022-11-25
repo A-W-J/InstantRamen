@@ -2,17 +2,17 @@ ResultsUI <- function(id){
   tabPanel("Get Results",
     fluidRow(
       column(4,
-           textInput(NS(id,"ctl"), "Control Group Name", value = "control"),
-           textInput(NS(id,"trt"), "Treatment Group Name", value = "treatment"),
-           numericInput(NS(id, "ctl_num"), "Number of control samples", value = 1),
-           numericInput(NS(id, "trt_num"), "Number of treatment samples", value = 1),
+           #textInput(NS(id,"ctl"), "Control Group Name", value = "control"),
+           #textInput(NS(id,"trt"), "Treatment Group Name", value = "treatment"),
+           #numericInput(NS(id, "ctl_num"), "Number of control samples", value = 1),
+           #numericInput(NS(id, "trt_num"), "Number of treatment samples", value = 1),
            actionButton(NS(id, "execute"), "Process data"),
            actionButton(NS(id, "transform"), "Annotate data"),
            downloadButton(NS(id, "download"), "download results")
       ),
-      column(8,
-           dataTableOutput("out")
-      )
+      #column(8,
+           #dataTableOutput("out")
+      #)
     )
   )
 }
@@ -27,6 +27,7 @@ ResultsServer <- function(id, data){
     })
     observeEvent(data(),{
       main$userInput <- data()
+      print(head(main$userInput))
     })
     data1 <- reactive({
       req(main$userInput)
@@ -34,6 +35,7 @@ ResultsServer <- function(id, data){
     })
     observeEvent(data1(),{
       main$data = data1()
+      print(head(main$data))
     })
     r_ctl <- reactive({
       req(input$ctl)
@@ -90,9 +92,9 @@ ResultsServer <- function(id, data){
         write.csv(main$output, file)
       }
     )
-    reactive({
-      req(main$userInput)
-      list(main$data, main$cds, main$ctl_name, main$trt_name, main$output)
-    })
+    #reactive({
+      #req(main$userInput)
+      #list(main$data, main$cds, main$ctl_name, main$trt_name, main$output)
+    #})
   })
 }

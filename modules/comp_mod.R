@@ -1,4 +1,4 @@
-CompUI <- function(id){
+comp_ui <- function(id){
   tabPanel("Compare Data",
            fluidRow(
              column(4,
@@ -19,7 +19,7 @@ CompUI <- function(id){
   )
 }
 
-CompServer <- function(id){
+comp_server <- function(id){
   moduleServer(id, function(input, output, session){
     sub <- reactiveValues(userInput1 = NULL)
     df1 <- reactive({
@@ -81,5 +81,13 @@ CompServer <- function(id){
     output$genePlotOut <- renderPlot({
       sub$plot
     })
+    output$download <- downloadHandler(
+     filename = function(){
+        "results.csv"
+     },
+     content = function(file){
+        write.csv(main$output, file)
+      }
+    )
   })
 }
