@@ -30,7 +30,7 @@ ui <- fluidPage(title = "InstantRamen v1.5",
                             value = 1),
                actionButton("execute", "process data"),
                actionButton("transform", "annotate data"),
-               actionButton("download", "download results")
+               downloadButton("download", "download results")
                ),
         column(8,
                dataTableOutput("out")
@@ -130,10 +130,10 @@ server <- function(input, output, session){
     input$ctl_num
   })
   observeEvent(r_ctl_n(),{
-    input$ctl_n
+    main$ctl_num = input$ctl_num
   })
   r_trt_n <- reactive({
-    input$trt_n
+    main$trt_num = input$trt_num
   })
   observeEvent(r_trt_n(),{
     main$trt_num = r_trt_n()
@@ -150,10 +150,13 @@ server <- function(input, output, session){
   #then we can make the LFC table
   observeEvent(input$execute,{
     req(main$CDS)
+    #print(main$CDS)
+    #print(class(main$data))
     main$output <- make_results(
-      data = main$data, 
-      cds = main$cds,
+      #data = main$data, 
+      cds = main$CDS,
       ctl = main$ctl_name,
+      trt = main$trt_name,
       ctl_n = main$ctl_num,
       trt_n = main$trt_num
     )
@@ -179,10 +182,10 @@ server <- function(input, output, session){
   #using information from the second tab, generate plots
   output$plotOut <- renderPlot({
     req(input$execute)
-    print_wrapper(data = main$data,
+    plot_wrapper(data = main$data,
                   ctl = main$ctl,
                   trt = main$trt,
-                  cds = main$cds,
+                  cds = main$CDS,
                   top = main$output,
                   toggle = input$plotType)
   })
