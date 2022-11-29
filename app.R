@@ -50,27 +50,29 @@ ui <- fluidPage(title = "InstantRamen v1.5",
               )
      )
     ),
-    tabPanel("Compare Data",
-      fluidRow(
-        column(4,
-               fileInput("upload1",
-                         "upload the first dataset",
-                         accept = c(".txt", ".csv", ".tsv")),
-               fileInput("upload2",
-                         "upload the second dataset",
-                         accept = c(".txt", ".csv", ".tsv")),
-               sliderInput("pval", "p-value cutoff", val = 0.05, min = 0, max = 1),
-               sliderInput("geneCount", "number of genes", val = 10, min = 0, max = 100),
-               actionButton("overlaps", "get overlapping genes"),
-               downloadButton("download2", "download results")
-        ),
-        column(8,
-               dataTableOutput("geneTableOut"),
-               plotOutput("genePlotOut")
-               )
-      )
-    )
+    comp_ui("comp")
   )
+    #tabPanel("Compare Data",
+      #fluidRow(
+        #column(4,
+               #fileInput("upload1",
+                         #"upload the first dataset",
+                         #accept = c(".txt", ".csv", ".tsv")),
+               #fileInput("upload2",
+                         #"upload the second dataset",
+                         #accept = c(".txt", ".csv", ".tsv")),
+               #sliderInput("pval", "p-value cutoff", val = 0.05, min = 0, max = 1),
+               #sliderInput("geneCount", "number of genes", val = 10, min = 0, max = 100),
+               #actionButton("overlaps", "get overlapping genes"),
+               #downloadButton("download2", "download results")
+        #),
+        #column(8,
+               #dataTableOutput("geneTableOut"),
+               #plotOutput("genePlotOut")
+               #)
+      #)
+    #)
+  #)
 )
 
 server <- function(input, output, session){
@@ -189,85 +191,86 @@ server <- function(input, output, session){
                   top = main$output,
                   toggle = input$plotType)
   })
+  comp_server("comp")
   #setting up another reactive container
-  sub <- reactiveValues(userInput1 = NULL)
+  #sub <- reactiveValues(userInput1 = NULL)
   #loading in the first result dataframe
-  df1 <- reactive({
-    req(input$upload1)
-    ext <- tools::file_ext(input$upload1$datapath, delim = ",")
-    switch(ext,
-      csv <- vroom::vroom(input$upload1$datapath, delim = ","),
-      tsv <- vroom::vroom(input$upload1$datapath, delim = "\t"),
-      txt <- vroom::vroom(input$upload1$datapath, delim = "\t")
-    )
-  })
+  #df1 <- reactive({
+    #req(input$upload1)
+    #ext <- tools::file_ext(input$upload1$datapath, delim = ",")
+    #switch(ext,
+      #csv <- vroom::vroom(input$upload1$datapath, delim = ","),
+      #tsv <- vroom::vroom(input$upload1$datapath, delim = "\t"),
+      #txt <- vroom::vroom(input$upload1$datapath, delim = "\t")
+    #)
+  #})
   #loading in the second result dataframe
-  df2 <- reactive({
-    req(input$upload2)
-    ext <- tools::file_ext(input$upload2$datapath, delim = ",")
-    switch(ext,
-      csv <- vroom::vroom(input$upload2$datapath, delim = ","),
-      tsv <- vroom::vroom(input$upload2$datapath, delim = "\t"),
-      txt <- vroom::vroom(input$upload2$datapath, delim = "\t")
-    )
-  })
+  #df2 <- reactive({
+    #req(input$upload2)
+    #ext <- tools::file_ext(input$upload2$datapath, delim = ",")
+    #switch(ext,
+      #csv <- vroom::vroom(input$upload2$datapath, delim = ","),
+      #tsv <- vroom::vroom(input$upload2$datapath, delim = "\t"),
+      #txt <- vroom::vroom(input$upload2$datapath, delim = "\t")
+    #)
+  #})
   #set these to their respective reactive containers
-  observeEvent(df1(),{
-    sub$userInput <- df1()
-  })
-  observeEvent(df2(),{
-    sub$userInput <- df2()
-  })
+  #observeEvent(df1(),{
+    #sub$userInput <- df1()
+  #})
+  #observeEvent(df2(),{
+    #sub$userInput <- df2()
+  #})
   #set values corresponding to the slider bars
-  observeEvent(input$pval,{
-    sub$pval <- input$pval
-  })
-  observeEvent(input$genecount,{
-    sub$genecount <- input$genecounts
-  })
+  #observeEvent(input$pval,{
+    #sub$pval <- input$pval
+  #})
+  #observeEvent(input$genecount,{
+    #sub$genecount <- input$genecounts
+  #})
   #working on the primary comparison pipeline
   #this activates through the 'find overlaps' button
-  observeEvent(input$overlaps,{
+  #observeEvent(input$overlaps,{
     #ensuring the dataframes have 'genes' as the column name containing the 
     #list of genes
-    df1 <- fix_gene_col(sub$userInput1)
-    df2 <- fix_gene_col(sub$userInput2)
+    #df1 <- fix_gene_col(sub$userInput1)
+    #df2 <- fix_gene_col(sub$userInput2)
     #finding the list of overlapping significant genes within the two datasets
-    genelist <- find_overlaps(
-      df1 = sub$userInput1,
-      df2 = sub$userInput2,
-      size = sub$geneCount,
-      p_cutoff = sub$pval
-    )
+    #genelist <- find_overlaps(
+      #df1 = sub$userInput1,
+      #df2 = sub$userInput2,
+      #size = sub$geneCount,
+      #p_cutoff = sub$pval
+    #)
     #assembling these results into a dataframe
-    gene_df <- build_frame(
-      df1 = sub$userInput1,
-      df2 = sub$userInput2,
-      genes = geneslist
-    )
+    #gene_df <- build_frame(
+      #df1 = sub$userInput1,
+      #df2 = sub$userInput2,
+      #genes = geneslist
+    #)
     #plotting the results
-    plot <- make_compare_plot(gene_df)
+    #plot <- make_compare_plot(gene_df)
     #placing the dataframe and the plot within the reactive container
-    sub$df <- gene_df
-    sub$plot <- plot
-  })
+    #sub$df <- gene_df
+    #sub$plot <- plot
+  #})
   #display the table
-  output$geneTableOut <- renderDataTable({
-    sub$df
-  })
+  #output$geneTableOut <- renderDataTable({
+    #sub$df
+  #})
   #display the plot
-  output$genePlotOut <- renderPlot({
-    sub$plot
-  })
+  #output$genePlotOut <- renderPlot({
+    #sub$plot
+  #})
   #download logic
-  output$download2 <- downloadHandler(
-    filename = function(){
-      "results.csv"
-    },
-    content = function(file){
-      write.csv(sub$df, file)
-    }
-  )
+  #output$download2 <- downloadHandler(
+    #filename = function(){
+      #"results.csv"
+    #},
+    #content = function(file){
+      #write.csv(sub$df, file)
+    #}
+  #)
 }
 
 shinyApp(ui, server)

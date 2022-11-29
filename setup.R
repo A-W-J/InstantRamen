@@ -34,7 +34,7 @@ source('./functions/remove_low_counts.R')
 source('./functions/transform_data.R')
 
 #loading modules
-#source('./modules/comp_mod.R')
+source('./modules/comp_mod.R')
 #source('./modules/processor_mod.R')
 
 #setting up variables
