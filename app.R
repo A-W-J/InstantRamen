@@ -1,7 +1,7 @@
 source('setup.R')
 #to do: figure out why memory usage skyrockets when the app is executed
 #to do: fix defaults for treatment and control sample numbers
-#to do: debug comparison tab- uploads are not currently working
+
 
 ui <- fluidPage(title = "InstantRamen v1.5",
   useShinyjs(),
@@ -50,6 +50,11 @@ ui <- fluidPage(title = "InstantRamen v1.5",
               )
      )
     ),
+    tabPanel("Explore Results",
+             navlistPanel(
+               tabPanel("PCA","Put PCA Contents Here"),
+               tabPanel("Pathway Analysis", "Put pathway contents here")
+             ))
     #comp_ui("comp")
   )
 )
