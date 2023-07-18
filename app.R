@@ -50,7 +50,7 @@ ui <- fluidPage(title = "InstantRamen v1.5",
               )
      )
     ),
-    comp_ui("comp")
+    #comp_ui("comp")
   )
 )
 
@@ -170,7 +170,7 @@ server <- function(input, output, session){
                   top = main$output,
                   toggle = input$plotType)
   })
-  comp_server("comp")
+  #comp_server("comp")
 }
 
 shinyApp(ui, server)
