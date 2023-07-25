@@ -45,4 +45,4 @@ source('./modules/comp_mod.R')
 #setting up variables
 plots <- c("Bar", "Box", "BCV", "Mean-Var", "Histogram", "Smear")
 
-pca_plots <- c("None", "Scree", "Biplot")
+pca_plots <- c("Scree", "Biplot")

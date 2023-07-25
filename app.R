@@ -35,6 +35,7 @@ ui <- fluidPage(title = "InstantRamen v1.5",
                downloadButton("download", "download results")
                ),
         column(8,
+               plotOutput("pca_plot_out"),
                dataTableOutput("out")
                )
       )
@@ -159,18 +160,21 @@ server <- function(input, output, session){
     print(class(main$pca))
     #can we generate the plots here and put them in the 'main' object?
     main$scree <- make_scree_plot(main$pca)
-    print(class(main$scree))
-    print(main$ctl_num)
-    print(main$trt_num)
     main$biplot <- make_biplot(pca = main$pca,
                                data = main$user_input,
                                ctl = main$ctl_name,
                                trt = main$trt_name,
                                ctl_n = main$ctl_num,
                                trt_n = main$trt_num)
-    print(class(main$biplot))
   })
   #display the PCA plots
+  output$pca_plot_out <- renderPlot({
+    req(input$pca_button)
+    plot <- switch(input$pca_display,
+                   Scree = main$scree,
+                   Biplot = main$biplot)
+    plot
+  })
 
   #display the LFC table
   output$out <- renderDataTable(
