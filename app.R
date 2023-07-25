@@ -24,10 +24,12 @@ ui <- fluidPage(title = "InstantRamen v1.5",
                textInput("trt", "treatment group name", value = "treatment"),
                numericInput("ctl_num", 
                             "number of control samples",
-                            value = 1),
+                            value = 3),
                numericInput("trt_num",
                             "number of treatment samples",
-                            value = 1),
+                            value = 3),
+               actionButton("pca_button", "run PCA"),
+               radioButtons("pca_display", "PCA Display", pca_plots),
                actionButton("execute", "process data"),
                actionButton("transform", "annotate data"),
                downloadButton("download", "download results")
@@ -52,7 +54,7 @@ ui <- fluidPage(title = "InstantRamen v1.5",
     ),
     tabPanel("Explore Results",
              navlistPanel(
-               tabPanel("PCA","Put PCA Contents Here"),
+               tabPanel("Volcano","Put volcano plot contents here"),
                tabPanel("Pathway Analysis", "Put pathway contents here")
              ))
     #comp_ui("comp")
@@ -62,12 +64,13 @@ ui <- fluidPage(title = "InstantRamen v1.5",
 server <- function(input, output, session){
   #setting some things up
   #creating the primary reactive container
-  main <- reactiveValues(userInput = NULL)
+  main <- reactiveValues(user_input = NULL)
   #hiding some buttons while there is no data
   observe({
-    toggle(id = "execute", condition =! is.null(main$userInput))
-    toggle(id = "transform", condition =! is.null(main$userInput))
-    toggle(id = "download", condition =! is.null(main$userInput))
+    toggle(id = "pca_button", condition =! is.null(main$user_input))
+    toggle(id = "execute", condition =! is.null(main$user_input))
+    toggle(id = "transform", condition =! is.null(main$user_input))
+    toggle(id = "download", condition =! is.null(main$user_input))
   })
   #loading in the primary count data
   data <- reactive({
@@ -84,16 +87,17 @@ server <- function(input, output, session){
   })
   #capture the user input and place it in the main container
   observeEvent(data(),{
-    main$userInput <- data()
+    main$user_input <- data()
   })
   #show a preview of the uploaded data
   output$head <- renderDataTable({
-    main$userInput
+    main$user_input
   })
   #when the user uploads the count data, process it and place it in the container
+  #this is most likely causing a problem with the PCA analysis
   data1 <- reactive({
-    req(main$userInput)
-    preprocess_data(main$userInput)
+    req(main$user_input)
+    preprocess_data(main$user_input)
   })
   observeEvent(data1(),{
     main$data <- data1()
@@ -124,9 +128,11 @@ server <- function(input, output, session){
   observeEvent(r_trt_n(),{
     main$trt_num = r_trt_n()
   })
+  #this is where we will put the PCA information
   #with this information, we can generate a CDS object
   #this is triggered when the 'execute' button is pushed
   observeEvent(input$execute,{
+    #moving the data processing here
     main$CDS <- generate_CDS(data = main$data,
                              ctl = main$ctl_name,
                              trt = main$trt_name,
@@ -147,6 +153,25 @@ server <- function(input, output, session){
       trt_n = main$trt_num
     )
   })
+  #similarly to the count processing, we can generate the PCA object
+  observeEvent(input$pca_button,{
+    main$pca <- principle(data = main$user_input)
+    print(class(main$pca))
+    #can we generate the plots here and put them in the 'main' object?
+    main$scree <- make_scree_plot(main$pca)
+    print(class(main$scree))
+    print(main$ctl_num)
+    print(main$trt_num)
+    main$biplot <- make_biplot(pca = main$pca,
+                               data = main$user_input,
+                               ctl = main$ctl_name,
+                               trt = main$trt_name,
+                               ctl_n = main$ctl_num,
+                               trt_n = main$trt_num)
+    print(class(main$biplot))
+  })
+  #display the PCA plots
+
   #display the LFC table
   output$out <- renderDataTable(
     main$output, options = list(pageLength = 5)

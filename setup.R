@@ -10,6 +10,8 @@ library(shinyjs)
 library(DT)
 library(org.Hs.eg.db)
 library(reshape)
+library(factoextra)
+library(ggfortify)
 
 #loading functions
 source('./functions/build_frame.R')
@@ -32,6 +34,9 @@ source('./functions/plot_wrapper.R')
 source('./functions/preprocess_data.R')
 source('./functions/remove_low_counts.R')
 source('./functions/transform_data.R')
+source('./functions/principle.R')
+source('./functions/make_scree_plot.R')
+source('./functions/make_biplot.R')
 
 #loading modules
 source('./modules/comp_mod.R')
@@ -39,3 +44,5 @@ source('./modules/comp_mod.R')
 
 #setting up variables
 plots <- c("Bar", "Box", "BCV", "Mean-Var", "Histogram", "Smear")
+
+pca_plots <- c("None", "Scree", "Biplot")
