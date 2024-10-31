@@ -1,210 +1,143 @@
-source('setup.R')
-#to do: figure out why memory usage skyrockets when the app is executed
-#to do: fix defaults for treatment and control sample numbers
+options(repos = BiocManager::repositories())
+library(BiocManager)
+library(shiny)
+library(edgeR)
+library(RColorBrewer)
+library(ggplot2)
+library(tidyverse)
+library(shinyjs)
+library(DT)
+library(org.Hs.eg.db)
+library(reshape)
+library(factoextra)
+library(ggfortify)
+library(shinydashboard)
 
 
-ui <- fluidPage(title = "InstantRamen v1.5",
-  useShinyjs(),
-  theme = bslib::bs_theme(bootswatch = "darkly"),
-  tabsetPanel(
-    tabPanel("Import Data",
-      fluidRow(
-        column(4,
-               fileInput("upload", "upload count data",
-                         accept = c(".txt", ".csv", ".tsv"))
-               ),
-        column(8,
-               dataTableOutput("head"))
-      )
-    ),
-    tabPanel("Get Results",
-      fluidRow(
-        column(4,
-               textInput("ctl", "control group name", value = "control"),
-               textInput("trt", "treatment group name", value = "treatment"),
-               numericInput("ctl_num", 
-                            "number of control samples",
-                            value = 3),
-               numericInput("trt_num",
-                            "number of treatment samples",
-                            value = 3),
-               actionButton("pca_button", "run PCA"),
-               radioButtons("pca_display", "PCA Display", pca_plots),
-               actionButton("execute", "process data"),
-               actionButton("transform", "annotate data"),
-               downloadButton("download", "download results")
-               ),
-        column(8,
-               plotOutput("pca_plot_out"),
-               dataTableOutput("out")
-               )
-      )
-    ),
-    tabPanel("Visualize Results",
-     fluidRow(
-       column(4,
-         selectInput("plotType",
-                     "select a plot to display",
-                     choices = plots,
-                     selected = plots[1])
-              ),
-       column(8,
-              plotOutput("plotOut")
-              )
-     )
-    ),
-    tabPanel("Explore Results",
-             navlistPanel(
-               tabPanel("Volcano","Put volcano plot contents here"),
-               tabPanel("Pathway Analysis", "Put pathway contents here")
-             ))
-    #comp_ui("comp")
-  )
+#source functions here
+source('./functions/annotation/annotate_data.R')
+source('./functions/annotation/convert_ids.R')
+
+source('./functions/plotting/make_barplot.R')
+source('./functions/plotting/make_bcv_plot.R')
+source('./functions/plotting/make_biplot.R')
+source('./functions/plotting/make_boxplot.R')
+source('./functions/plotting/make_histogram.R')
+source('./functions/plotting/make_meanvar_plot.R')
+source('./functions/plotting/make_scree_plot.R')
+source('./functions/plotting/make_smear_plot.R')
+source('./functions/plotting/plot_driver.R')
+
+source('./functions/processing/get_row_names.R')
+source('./functions/processing/preprocess_data.R')
+source('./functions/processing/process_data.R')
+source('./functions/processing/remove_low_counts.R')
+
+source('./functions/stats/generate_CDS.R')
+source('./functions/stats/run_pca.R')
+
+source('./functions/junctions/data_junction.R')
+source('./functions/junctions/pca_junction.R')
+source('./functions/junctions/plot_junction.R')
+
+
+#constants
+plots <- c("bar", "box", "bcv", "mean_var", "histogram", "smear")
+
+#ui
+ui <- dashboardPage(skin = "black",
+		    dashboardHeader(title = "Instant Ramen"),
+		    dashboardSidebar(
+				     fileInput("upload", "upload count data", accept = c(".txt", ".csv", ".tsv")),
+				     textInput("user_settings", "parameters, seperated by a comma", value = "control,treatment,3,3"),
+				     actionButton("run", "run"),
+				     radioButtons("show_data_as", "Data type: ", choices = c("raw", "processed"), selected = "raw"),
+				     radioButtons("show_pca_as", "Show PCA as: ", choices = c("screeplot", "biplot"), selected = "screeplot"),
+				     selectInput("show_plot_as", "plot display", choices = plots)
+				     ),
+		    dashboardBody(
+				  fluidRow(
+					   column(width = 8,
+						  box(width = NULL, DT::dataTableOutput("display"),
+						      style = "height:400px; overflow-y: scroll; overflow-x: scroll;"),
+						  ),
+					   column(width = 4,
+						  box(width = NULL, plotOutput("pca_display", height = 300, width = 250)),
+						  box(width = NULL, plotOutput("plot_display", height = 300, width = 250))
+						  
+					   )
+				  )
+		    )
 )
 
 server <- function(input, output, session){
-  #setting some things up
-  #creating the primary reactive container
-  main <- reactiveValues(user_input = NULL)
-  #hiding some buttons while there is no data
-  observe({
-    toggle(id = "pca_button", condition =! is.null(main$user_input))
-    toggle(id = "execute", condition =! is.null(main$user_input))
-    toggle(id = "transform", condition =! is.null(main$user_input))
-    toggle(id = "download", condition =! is.null(main$user_input))
-  })
-  #loading in the primary count data
-  data <- reactive({
-    #do not execute until the user actually uploads the file
-    req(input$upload)
-    #verify that we have the right data type
-    ext <- tools::file_ext(input$upload$name)
-    switch(ext,
-           csv = vroom::vroom(input$upload$datapath, delim = ","),
-           tsv = vroom::vroom(input$upload$datapath, delim = "\t"),
-           txt = vroom::vroom(input$upload$datapath, delim = "\t"),
-           validate("invalid file; please upload a .csv, .tsv, or .txt file")
-      )
-  })
-  #capture the user input and place it in the main container
-  observeEvent(data(),{
-    main$user_input <- data()
-  })
-  #show a preview of the uploaded data
-  output$head <- renderDataTable({
-    main$user_input
-  })
-  #when the user uploads the count data, process it and place it in the container
-  #this is most likely causing a problem with the PCA analysis
-  data1 <- reactive({
-    req(main$user_input)
-    preprocess_data(main$user_input)
-  })
-  observeEvent(data1(),{
-    main$data <- data1()
-  })
-  #accept a bunch of inputs from a series of displayed boxes
-  #we have defaults here, so no need to check for user input
-  r_ctl <- reactive({
-    input$ctl
-  })
-  observeEvent(r_ctl(),{
-    main$ctl_name = r_ctl()
-  })
-  r_trt <- reactive({
-    input$trt
-  })
-  observeEvent(r_trt(),{
-    main$trt_name = r_trt()
-  })
-  r_ctl_n <- reactive({
-    input$ctl_num
-  })
-  observeEvent(r_ctl_n(),{
-    main$ctl_num = input$ctl_num
-  })
-  r_trt_n <- reactive({
-    main$trt_num = input$trt_num
-  })
-  observeEvent(r_trt_n(),{
-    main$trt_num = r_trt_n()
-  })
-  #this is where we will put the PCA information
-  #with this information, we can generate a CDS object
-  #this is triggered when the 'execute' button is pushed
-  observeEvent(input$execute,{
-    #moving the data processing here
-    main$CDS <- generate_CDS(data = main$data,
-                             ctl = main$ctl_name,
-                             trt = main$trt_name,
-                             ctl_n = main$ctl_num,
-                             trt_n = main$trt_num)
-  })
-  #then we can make the LFC table
-  observeEvent(input$execute,{
-    req(main$CDS)
-    #print(main$CDS)
-    #print(class(main$data))
-    main$output <- make_results(
-      #data = main$data, 
-      cds = main$CDS,
-      ctl = main$ctl_name,
-      trt = main$trt_name,
-      ctl_n = main$ctl_num,
-      trt_n = main$trt_num
-    )
-  })
-  #similarly to the count processing, we can generate the PCA object
-  observeEvent(input$pca_button,{
-    main$pca <- principle(data = main$user_input)
-    print(class(main$pca))
-    #can we generate the plots here and put them in the 'main' object?
-    main$scree <- make_scree_plot(main$pca)
-    main$biplot <- make_biplot(pca = main$pca,
-                               data = main$user_input,
-                               ctl = main$ctl_name,
-                               trt = main$trt_name,
-                               ctl_n = main$ctl_num,
-                               trt_n = main$trt_num)
-  })
-  #display the PCA plots
-  output$pca_plot_out <- renderPlot({
-    req(input$pca_button)
-    plot <- switch(input$pca_display,
-                   Scree = main$scree,
-                   Biplot = main$biplot)
-    plot
-  })
+	Data <- reactiveValues()
+	Params <- reactiveValues()
+	Plots <- reactiveValues()
 
-  #display the LFC table
-  output$out <- renderDataTable(
-    main$output, options = list(pageLength = 5)
-  )
-  #if the 'transform button' is clicked, apply the annotation function to
-  #the LFC table
-  observeEvent(input$transform,{
-    main$output <- transform_data(data = main$output)
-  })
-  #download the LFC table
-  output$download <- downloadHandler(
-    filename = function(){
-      "results.csv"
-    },
-    content = function(file){
-      write.csv(main$output, file)
-    }
-  )
-  #using information from the second tab, generate plots
-  output$plotOut <- renderPlot({
-    req(input$execute)
-    plot_wrapper(data = main$data,
-                  ctl = main$ctl,
-                  trt = main$trt,
-                  cds = main$CDS,
-                  top = main$output,
-                  toggle = input$plotType)
-  })
-  #comp_server("comp")
+	#loading the data
+	observeEvent(input$upload,{
+			     raw_data <- reactive({
+          			ext <- tools::file_ext(input$upload$name)
+    				    switch(ext,
+           				csv = vroom::vroom(input$upload$datapath, delim = ","),
+           				tsv = vroom::vroom(input$upload$datapath, delim = "\t"),
+           				txt = vroom::vroom(input$upload$datapath, delim = "\t"),
+           				validate("invalid file; please upload a .csv, .tsv, or .txt file")
+				      		)
+			       })
+			     Data$raw_data <- raw_data()
+			     Data$pre_processed <- preprocess_data(Data$raw_data) #adding the preprocessing step here
+			     #print("raw data row counts")
+			     #print(nrow(Data$raw_data))
+		    })
+	#parsing out user input
+	observeEvent(input$user_settings,{
+			     settings <- unlist(strsplit(input$user_settings, split = ","))
+			     Params$control_name = settings[1]
+			     Params$treatment_name = settings[2]
+			     Params$control_number = settings[3]
+			     Params$treatment_number = settings[4]
+		    })
+	observeEvent(input$run,{
+			     req(input$upload)
+			     req(input$user_settings)
+			     #print("checkpoint 1")
+			     Data$CDS <- generate_cds(Data$pre_processed, Params)
+			     #print("checkpoint 2")
+			     Data$processed_data <- process_data(Data$CDS, Params)
+			     #print("checkpoint 3")
+			     Data$PCA <- run_pca(Data$raw_data)
+			     #print("checkpoint 4")
+			     Data$processed_data <- annotate_data(Data$processed_data)
+			     #print("checkpoint 5")
+			     Plots$plot_list <- plot_driver(Data, Params)
+			     #print("checkpoint 6")
+			     		    })
+	
+	observeEvent(input$show_pca_as,{
+	  req(Plots$plot_list)
+	  Plots$current_pca_plot <- pca_junction(Plots, toggle = input$show_pca_as)
+	})
+	
+	observeEvent(input$show_plot_as,{
+	  req(Plots$plot_list)
+	  Plots$current_plot <- plot_junction(Plots, toggle = input$show_plot_as)
+	})
+	
+	output$display <- DT::renderDataTable({
+		req(input$upload)
+	  df <- data_junction(Data, toggle = input$show_data_as)
+	})
+	
+	output$pca_display <- renderPlot({
+	  Plots$current_pca_plot
+	})
+	
+	output$plot_display <- renderPlot({
+	  Plots$current_plot
+	})
 }
 
 shinyApp(ui, server)
+
