@@ -10,4 +10,5 @@ make_meanvar_plot <- function(cds){
                       xlab = "Mean Expression (log10 scale)",
                       ylab = "Variance (log10 scale",
                       main = "Mean-Variance Plot")
+  plot_obj <- recordPlot()
 }
