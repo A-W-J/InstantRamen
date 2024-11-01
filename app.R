@@ -33,7 +33,7 @@ source('./functions/processing/preprocess_data.R')
 source('./functions/processing/process_data.R')
 source('./functions/processing/remove_low_counts.R')
 
-source('./functions/stats/generate_CDS.R')
+source('./functions/stats/generate_cds.R')
 source('./functions/stats/run_pca.R')
 
 source('./functions/junctions/data_junction.R')
